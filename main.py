@@ -42,6 +42,8 @@ async def api_status():
         "tick": sim.time.tick,
         "population": len(sim.citizens.citizens),
         "day": sim.time.day,
+        "deaths": len(sim.lifecycle.dead_citizens),
+        "imprisoned": len(sim.crime.imprisoned),
     }
 
 
@@ -60,6 +62,42 @@ async def api_economy():
     return sim.economy.to_dict()
 
 
+# --- New endpoints ---
+
+@app.get("/api/crimes")
+async def api_crimes():
+    return sim.crime.get_recent_crimes(50)
+
+
+@app.get("/api/ledger")
+async def api_ledger():
+    return sim.token.get_recent_transactions(50, sim.citizens)
+
+
+@app.get("/api/wallet/{citizen_id}")
+async def api_wallet(citizen_id: str):
+    if citizen_id not in sim.citizens.citizens:
+        raise HTTPException(404, "Citizen not found")
+    return {
+        "citizen_id": citizen_id,
+        "name": sim.citizens.citizens[citizen_id].name,
+        "aic_balance": sim.token.get_balance(citizen_id),
+    }
+
+
+@app.get("/api/relationships/{citizen_id}")
+async def api_relationships(citizen_id: str):
+    if citizen_id not in sim.citizens.citizens:
+        raise HTTPException(404, "Citizen not found")
+    return {
+        "citizen_id": citizen_id,
+        "name": sim.citizens.citizens[citizen_id].name,
+        "relationships": sim.relationships.get_relationships_for(citizen_id, sim.citizens),
+    }
+
+
+# --- Existing endpoints ---
+
 class RegisterRequest(BaseModel):
     name: str
     role: str = "公務員"
@@ -69,6 +107,8 @@ class RegisterRequest(BaseModel):
 @app.post("/api/citizen/register")
 async def register_citizen(req: RegisterRequest):
     c = sim.citizens.register_external(req.name, req.role, req.personality or {})
+    sim.token.wallets[c.id] = 100.0
+    sim.token.total_supply += 100.0
     sim._add_news(f"🆕 新しい市民「{c.name}」が登録されました", "social")
     return {"citizen_id": c.id, "api_key": c.api_key}
 
@@ -104,6 +144,7 @@ async def citizen_action(citizen_id: str, req: ActionRequest):
         c.money += 100
         c.hunger += 5
         c.action = "働いている"
+        sim.token.reward(c.id, 1.0, "労働", sim.time.tick)
         return {"status": "working", "money": c.money}
 
     raise HTTPException(400, "Invalid action")

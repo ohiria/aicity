@@ -7,7 +7,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700&family=Orbitron:wght@400;700&display=swap');
-:root{--bg:#0a0a1a;--panel:rgba(15,15,35,0.85);--border:rgba(0,240,255,0.15);--cyan:#00f0ff;--orange:#ff6b35;--pink:#ff3cac;--green:#00ff88;--text:#e0e0f0;--dim:#6a6a8a;--glass:rgba(20,20,50,0.7)}
+:root{--bg:#0a0a1a;--panel:rgba(15,15,35,0.85);--border:rgba(0,240,255,0.15);--cyan:#00f0ff;--orange:#ff6b35;--pink:#ff3cac;--green:#00ff88;--text:#e0e0f0;--dim:#6a6a8a;--glass:rgba(20,20,50,0.7);--crime-red:#ff4444;--justice-orange:#ffaa00;--gold:#ffd700;--lifecycle-purple:#cc88ff}
 html,body{height:100%;font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--cyan);border-radius:2px}
 
@@ -56,6 +56,19 @@ header .info span{white-space:nowrap}
 .price-down{color:var(--green)}
 .biz-item{font-size:.75rem;padding:2px 0;color:var(--dim)}
 
+/* CRIME PANEL */
+.crime-item{font-size:.75rem;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+.crime-undetected{color:#555}
+.crime-detected{color:var(--crime-red)}
+.crime-trial{color:var(--justice-orange)}
+.crime-convicted{color:#cc6600}
+.crime-acquitted{color:var(--dim)}
+.prisoner-badge{display:inline-block;background:rgba(255,68,68,0.2);border:1px solid rgba(255,68,68,0.3);padding:1px 6px;border-radius:8px;font-size:.7rem;color:var(--crime-red)}
+
+/* TOKEN PANEL */
+.tx-item{font-size:.72rem;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.03);color:var(--gold)}
+.tx-list{max-height:120px;overflow-y:auto}
+
 /* NEWS TICKER */
 .ticker{flex-shrink:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(0,240,255,0.03);overflow:hidden;height:28px;display:flex;align-items:center;position:relative}
 .ticker-label{background:var(--orange);color:#000;font-weight:700;font-size:.7rem;padding:0 10px;height:100%;display:flex;align-items:center;flex-shrink:0;z-index:1}
@@ -66,13 +79,18 @@ header .info span{white-space:nowrap}
 /* BOTTOM PANELS */
 .bottom{display:flex;flex-shrink:0;height:200px;min-height:120px;border-top:1px solid var(--border)}
 .bottom>div{flex:1;overflow-y:auto;padding:8px 12px}
-.bottom>div:first-child{border-right:1px solid var(--border)}
+.bottom>div:not(:last-child){border-right:1px solid var(--border)}
 .conv-msg{margin-bottom:6px;animation:fadeIn .3s ease}
 .conv-speaker{font-weight:700;font-size:.75rem;color:var(--orange)}
 .conv-bubble{background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.12);border-radius:8px 8px 8px 2px;padding:4px 8px;font-size:.78rem;display:inline-block;max-width:90%;margin-top:2px}
 .log-entry{font-size:.75rem;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
 .log-entry .time{color:var(--dim);margin-right:6px}
+.log-crime{color:var(--crime-red)!important}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* CITIZEN POPUP extras */
+.citizen-popup .imprisoned-badge{background:rgba(255,68,68,0.2);border:1px solid rgba(255,68,68,0.4);color:var(--crime-red);padding:2px 6px;border-radius:6px;font-size:.72rem;font-weight:700;display:inline-block;margin-top:4px}
+.citizen-popup .criminal-record{color:var(--crime-red);font-size:.72rem;margin-top:2px}
 
 /* JOIN BUTTON */
 .join-btn{position:fixed;bottom:16px;right:16px;background:linear-gradient(135deg,var(--cyan),var(--pink));color:#000;border:none;padding:10px 18px;border-radius:24px;font-weight:700;font-size:.85rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,240,255,0.3);z-index:100;transition:transform .2s,box-shadow .2s}
@@ -92,7 +110,7 @@ header .info span{white-space:nowrap}
 .modal-actions .submit{background:var(--cyan);color:#000}.modal-actions .cancel{background:rgba(255,255,255,0.1);color:var(--text)}
 
 /* CITIZEN POPUP */
-.citizen-popup{display:none;position:absolute;background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:12px;padding:12px;width:220px;z-index:50;pointer-events:none;font-size:.78rem;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+.citizen-popup{display:none;position:absolute;background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:12px;padding:12px;width:240px;z-index:50;pointer-events:none;font-size:.78rem;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
 .citizen-popup.show{display:block}
 .citizen-popup .name{font-weight:700;font-size:.9rem;color:var(--cyan)}
 .citizen-popup .role{color:var(--orange);font-size:.75rem}
@@ -161,6 +179,21 @@ header .info span{white-space:nowrap}
         <div style="margin-top:6px;font-size:.7rem;color:var(--dim)">トップ企業</div>
         <div id="eBiz"></div>
       </div>
+      <div class="panel">
+        <div class="panel-title"><em class="icon">🪙</em> AICOIN</div>
+        <div class="stat-row"><span>総供給量</span><span class="stat-val" id="tSupply">0</span></div>
+        <div class="stat-row"><span>供給推移</span><div class="sparkline" id="tSparkline"></div></div>
+        <div class="stat-row"><span>サーバー国庫</span><span class="stat-val" id="tTreasury">0</span></div>
+        <div style="margin-top:6px;font-size:.7rem;color:var(--dim)">最近の取引</div>
+        <div class="tx-list" id="tTransactions"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><em class="icon">🚔</em> CRIME & JUSTICE</div>
+        <div class="stat-row"><span>犯罪件数</span><span class="stat-val" id="crimeCount" style="color:var(--crime-red)">0</span></div>
+        <div class="stat-row"><span>検挙率</span><span class="stat-val" id="crimeDetRate">0%</span></div>
+        <div class="stat-row"><span>収監者数</span><span class="prisoner-badge" id="prisonerCount">🔒 0</span></div>
+        <div id="crimeList" style="margin-top:6px;max-height:120px;overflow-y:auto"></div>
+      </div>
     </div>
   </div>
   <div class="ticker">
@@ -171,6 +204,10 @@ header .info span{white-space:nowrap}
     <div>
       <div class="panel-title"><em class="icon">💬</em> CONVERSATIONS</div>
       <div id="convPanel"></div>
+    </div>
+    <div>
+      <div class="panel-title"><em class="icon">🚔</em> CRIME LOG</div>
+      <div id="crimeLogPanel"></div>
     </div>
     <div>
       <div class="panel-title"><em class="icon">📋</em> ACTIVITY LOG</div>
@@ -199,7 +236,8 @@ header .info span{white-space:nowrap}
 
 <script>
 // STATE
-let state = null, prevPrices = {}, gdpHistory = [], logEntries = [], citizenPositions = {}, particles = [], ws = null;
+let state = null, prevPrices = {}, gdpHistory = [], supplyHistory = [], logEntries = [], crimeLogEntries = [], citizenPositions = {}, particles = [], ws = null;
+let eventAnimations = []; // for crime/death/wedding flash animations
 const canvas = document.getElementById('cityCanvas'), ctx = canvas.getContext('2d');
 let W = 900, H = 550, scale = 1, selectedCitizen = null, mouseX = 0, mouseY = 0, animFrame = 0;
 
@@ -225,21 +263,68 @@ function connect() {
 }
 connect();
 
+// Find location coords by name
+function findLocationCoords(locName) {
+  if (!state || !state.locations) return null;
+  const loc = state.locations.find(l => l.name === locName || l.id === locName);
+  return loc ? { x: loc.x, y: loc.y } : null;
+}
+
 function updateState(d) {
   const prev = state;
   state = d;
   // Track GDP
   if (d.economy) { gdpHistory.push(d.economy.gdp); if (gdpHistory.length > 20) gdpHistory.shift(); }
+  // Track token supply
+  const token = d.token || {};
+  supplyHistory.push(token.totalSupply || 0);
+  if (supplyHistory.length > 20) supplyHistory.shift();
+
   // Lerp targets
   if (d.citizens) d.citizens.forEach(c => {
     if (!citizenPositions[c.id]) citizenPositions[c.id] = { x: c.x, y: c.y };
     citizenPositions[c.id].tx = c.x; citizenPositions[c.id].ty = c.y;
   });
-  // News log
+  // News log — split crime entries to crime log
   if (d.news) d.news.forEach(n => {
-    if (!logEntries.find(e => e.time === n.time && e.text === n.text)) logEntries.push(n);
+    if (!logEntries.find(e => e.time === n.time && e.text === n.text)) {
+      logEntries.push(n);
+      if (n.type === 'crime' || n.type === 'justice') crimeLogEntries.push(n);
+    }
+    // Spawn event animations from news
+    if (n._new) { // only if backend marks new
+      spawnNewsAnimation(n);
+    }
   });
   if (logEntries.length > 100) logEntries = logEntries.slice(-100);
+  if (crimeLogEntries.length > 50) crimeLogEntries = crimeLogEntries.slice(-50);
+
+  // Detect new crimes for animations
+  if (d.crimes) {
+    const prevCrimes = (prev && prev.crimes) || [];
+    d.crimes.forEach(crime => {
+      if (!prevCrimes.find(pc => pc.time === crime.time && pc.type === crime.type && pc.perpetrator === crime.perpetrator)) {
+        const coords = findLocationCoords(crime.location);
+        if (coords) eventAnimations.push({ x: coords.x, y: coords.y, icon: '🚨', life: 60, maxLife: 60 });
+      }
+    });
+  }
+
+  // Detect deaths/weddings from news
+  if (d.news) d.news.forEach(n => {
+    if (!prev || !prev.news || !prev.news.find(pn => pn.time === n.time && pn.text === n.text)) {
+      if (n.type === 'lifecycle' && n.text && n.text.includes('死')) {
+        // death - try to find location
+        const coords = n.location ? findLocationCoords(n.location) : null;
+        if (coords) eventAnimations.push({ x: coords.x, y: coords.y, icon: '💀', life: 80, maxLife: 80 });
+      }
+      if (n.type === 'social' && n.text && (n.text.includes('結婚') || n.text.includes('婚'))) {
+        const coords = n.location ? findLocationCoords(n.location) : null;
+        if (coords) eventAnimations.push({ x: coords.x, y: coords.y, icon: '💒', life: 80, maxLife: 80 });
+      }
+    }
+  });
+
   // Prices diff
   if (prev && prev.economy && d.economy) { prevPrices = prev.economy.prices || {}; }
   updateUI();
@@ -249,6 +334,8 @@ function updateState(d) {
 function updateUI() {
   if (!state) return;
   const t = state.time || {}, s = state.stats || {}, g = state.government || {}, e = state.economy || {};
+  const token = state.token || {};
+  const crimes = state.crimes || [];
   const seasonMap = {'春':'🌸春','夏':'☀️夏','秋':'🍂秋','冬':'❄️冬'};
   const weatherMap = {'晴れ':'☀️','曇り':'☁️','雨':'🌧️','雪':'❄️','嵐':'⛈️','小雨':'🌦️','花曇り':'🌥️','春風':'🌬️','猛暑':'🔥','夕立':'⛈️','蒸し暑い':'💧','秋雨':'🌧️','涼風':'🍃','紅葉日和':'🍁','寒波':'🥶','霜':'❄️'};
   document.getElementById('hTime').textContent = t.display || '--';
@@ -267,7 +354,7 @@ function updateUI() {
   document.getElementById('sUnemp').textContent = (e.unemployment||0) + '%';
   document.getElementById('sBiz').textContent = (e.businesses||[]).length;
 
-  // Sparkline
+  // GDP Sparkline
   const sp = document.getElementById('sSparkline');
   const maxG = Math.max(...gdpHistory, 1);
   sp.innerHTML = gdpHistory.map(v => `<div class="bar" style="height:${Math.max(2, v/maxG*20)}px"></div>`).join('');
@@ -302,6 +389,38 @@ function updateUI() {
   const biz = (e.businesses||[]).sort((a,b)=>(b.revenue||0)-(a.revenue||0)).slice(0,3);
   document.getElementById('eBiz').innerHTML = biz.map(b => `<div class="biz-item">${b.name} (${b.type}) — ¥${(b.revenue||0).toLocaleString()}</div>`).join('');
 
+  // AICoin Panel
+  document.getElementById('tSupply').textContent = (token.totalSupply || 0).toLocaleString();
+  document.getElementById('tTreasury').textContent = (token.serverTreasury || 0).toLocaleString();
+  const tsp = document.getElementById('tSparkline');
+  const maxS = Math.max(...supplyHistory, 1);
+  tsp.innerHTML = supplyHistory.map(v => `<div class="bar" style="height:${Math.max(2, v/maxS*20)}px;background:var(--gold)"></div>`).join('');
+  const txs = (token.recentTransactions || []).slice(-8).reverse();
+  document.getElementById('tTransactions').innerHTML = txs.map(tx =>
+    `<div class="tx-item"><span style="color:var(--dim)">${tx.time||''}</span> ${tx.from}→${tx.to} 🪙${tx.amount} <span style="color:var(--dim)">${tx.reason||''}</span></div>`
+  ).join('');
+
+  // Crime & Justice Panel
+  document.getElementById('crimeCount').textContent = crimes.length;
+  const detected = crimes.filter(c => c.detected);
+  const rate = crimes.length > 0 ? Math.round(detected.length / crimes.length * 100) : 0;
+  document.getElementById('crimeDetRate').textContent = rate + '%';
+  const prisoners = (state.citizens || []).filter(c => c.is_imprisoned);
+  document.getElementById('prisonerCount').textContent = '🔒 ' + prisoners.length;
+
+  const statusClass = s => {
+    if (!s) return 'crime-undetected';
+    if (s === '未検出') return 'crime-undetected';
+    if (s === '捜査中') return 'crime-detected';
+    if (s === '裁判中') return 'crime-trial';
+    if (s === '有罪') return 'crime-convicted';
+    if (s === '無罪') return 'crime-acquitted';
+    return 'crime-detected';
+  };
+  document.getElementById('crimeList').innerHTML = crimes.slice(-8).reverse().map(c =>
+    `<div class="crime-item ${statusClass(c.status)}">${c.time||''} ${c.type} — ${c.perpetrator}${c.victim ? '→'+c.victim : ''} <b>[${c.status||'未検出'}]</b></div>`
+  ).join('');
+
   // News ticker
   const ticker = document.getElementById('tickerTrack');
   if (state.news && state.news.length) {
@@ -317,9 +436,15 @@ function updateUI() {
   }).join('');
   cp.scrollTop = cp.scrollHeight;
 
-  // Log
+  // Crime Log
+  const clp = document.getElementById('crimeLogPanel');
+  clp.innerHTML = crimeLogEntries.slice(-20).reverse().map(n =>
+    `<div class="log-entry"><span class="time">${n.time}</span><span class="log-crime">${n.text}</span></div>`
+  ).join('');
+
+  // Activity Log
   const lp = document.getElementById('logPanel');
-  const typeColors = {politics:'#ffcc00',economy:'#00aaff',social:'#00ff88',crime:'#ff4444',culture:'#cc88ff',general:'#aaaacc'};
+  const typeColors = {politics:'#ffcc00',economy:'#00aaff',social:'#00ff88',crime:'#ff4444',justice:'#ffaa00',culture:'#cc88ff',lifecycle:'#cc88ff',token:'#ffd700',general:'#aaaacc'};
   lp.innerHTML = logEntries.slice(-30).map(n => `<div class="log-entry"><span class="time">${n.time}</span><span style="color:${typeColors[n.type]||'var(--text)'}">${n.text}</span></div>`).join('');
   lp.scrollTop = lp.scrollHeight;
 
@@ -412,6 +537,19 @@ function render() {
   });
   particles = particles.filter(p => p.life > 0 && p.y < ch + 10);
 
+  // Event animations (crime/death/wedding flashes)
+  eventAnimations.forEach(ea => {
+    const ex = ea.x * sx, ey = ea.y * sy;
+    const alpha = ea.life / ea.maxLife;
+    ctx.globalAlpha = alpha;
+    ctx.font = `${24*sx}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(ea.icon, ex, ey - 20*sy*(1 - alpha));
+    ea.life--;
+  });
+  ctx.globalAlpha = 1;
+  eventAnimations = eventAnimations.filter(ea => ea.life > 0);
+
   // Citizens
   const citizens = (state.citizens || []).slice(0, 50);
   citizens.forEach(c => {
@@ -420,22 +558,40 @@ function render() {
     pos.x += (pos.tx - pos.x) * 0.05;
     pos.y += (pos.ty - pos.y) * 0.05;
     const cx = pos.x * sx, cy = pos.y * sy;
+    const isBaby = (c.age || 99) < 5;
+    const isImprisoned = !!c.is_imprisoned;
+    const dotSize = isBaby ? 3*sx : 4*sx;
 
     // Trail
-    ctx.fillStyle = 'rgba(0,240,255,0.03)';
-    ctx.beginPath(); ctx.arc(cx, cy, 4*sx, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = isImprisoned ? 'rgba(255,68,68,0.05)' : 'rgba(0,240,255,0.03)';
+    ctx.beginPath(); ctx.arc(cx, cy, dotSize, 0, Math.PI*2); ctx.fill();
 
     // Dot
     const moodColors = {ecstatic:'#00ff88',happy:'#00ff88',neutral:'#00f0ff',sad:'#6a6aff',miserable:'#ff4444',angry:'#ff4444',stressed:'#ffaa00'};
-    ctx.fillStyle = moodColors[c.mood] || '#00f0ff';
-    ctx.beginPath(); ctx.arc(cx, cy, 4*sx, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 0.5;
-    ctx.stroke();
+    ctx.fillStyle = isImprisoned ? 'rgba(255,68,68,0.6)' : (moodColors[c.mood] || '#00f0ff');
+    ctx.beginPath(); ctx.arc(cx, cy, dotSize, 0, Math.PI*2); ctx.fill();
+
+    // Imprisoned: red circle outline
+    if (isImprisoned) {
+      ctx.strokeStyle = '#ff4444';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, dotSize + 2*sx, 0, Math.PI*2); ctx.stroke();
+    } else {
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
 
     // Avatar emoji
-    ctx.font = `${10*sx}px sans-serif`;
+    const avatarSize = isBaby ? 8*sx : 10*sx;
+    ctx.font = `${avatarSize}px sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(c.avatar || '👤', cx, cy - 8*sy);
+    if (isImprisoned) {
+      ctx.fillText('🔒', cx, cy - 8*sy);
+    } else if (isBaby) {
+      ctx.fillText('👶', cx, cy - 6*sy);
+    } else {
+      ctx.fillText(c.avatar || '👤', cx, cy - 8*sy);
+    }
 
     // Speech bubble
     if (c.speaking) {
@@ -467,7 +623,7 @@ function render() {
 }
 requestAnimationFrame(render);
 
-// CLICK
+// CLICK — Citizen popup with enhanced details
 canvas.addEventListener('click', e => {
   if (!state) return;
   const rect = canvas.getBoundingClientRect();
@@ -484,7 +640,13 @@ canvas.addEventListener('click', e => {
     const c = closest;
     document.getElementById('cpName').textContent = (c.avatar||'') + ' ' + c.name + ` (${c.age}歳・${c.gender})`;
     document.getElementById('cpRole').textContent = c.role + ' — ' + (c.action||'');
-    let det = `<div class="stat-line"><span>💰</span><span>¥${(c.money||0).toLocaleString()}</span></div>`;
+    let det = '';
+    // Imprisoned badge
+    if (c.is_imprisoned) {
+      det += `<div class="imprisoned-badge">🔒 収監中</div>`;
+    }
+    det += `<div class="stat-line"><span>💰</span><span>¥${(c.money||0).toLocaleString()}</span></div>`;
+    det += `<div class="stat-line"><span>🪙 AICoin</span><span>${(c.aic_balance||0).toLocaleString()}</span></div>`;
     det += `<div class="stat-line"><span>😊 幸福</span><span>${c.happiness}%</span></div>`;
     det += `<div class="stat-line"><span>❤️ 健康</span><span>${c.health}%</span></div>`;
     det += `<div class="stat-line"><span>🍽️ 空腹</span><span>${c.hunger}%</span></div>`;
@@ -492,9 +654,14 @@ canvas.addEventListener('click', e => {
       if (c.family.spouse) det += `<div class="stat-line"><span>💑</span><span>${c.family.spouse}</span></div>`;
       if (c.family.children?.length) det += `<div class="stat-line"><span>👶</span><span>${c.family.children.join(', ')}</span></div>`;
     }
+    // Criminal record
+    const record = c.criminal_record || [];
+    if (record.length > 0) {
+      det += `<div class="criminal-record">⚠️ 前科: ${record.join(', ')}</div>`;
+    }
     document.getElementById('cpDetails').innerHTML = det;
     popup.className = 'citizen-popup show';
-    popup.style.left = Math.min(e.clientX + 10, window.innerWidth - 240) + 'px';
+    popup.style.left = Math.min(e.clientX + 10, window.innerWidth - 260) + 'px';
     popup.style.top = (e.clientY - 100) + 'px';
   } else {
     popup.className = 'citizen-popup';
