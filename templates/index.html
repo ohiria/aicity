@@ -250,7 +250,7 @@ function updateUI() {
   if (!state) return;
   const t = state.time || {}, s = state.stats || {}, g = state.government || {}, e = state.economy || {};
   const seasonMap = {'春':'🌸春','夏':'☀️夏','秋':'🍂秋','冬':'❄️冬'};
-  const weatherMap = {'晴れ':'☀️','曇り':'☁️','雨':'🌧️','雪':'❄️','嵐':'⛈️'};
+  const weatherMap = {'晴れ':'☀️','曇り':'☁️','雨':'🌧️','雪':'❄️','嵐':'⛈️','小雨':'🌦️','花曇り':'🌥️','春風':'🌬️','猛暑':'🔥','夕立':'⛈️','蒸し暑い':'💧','秋雨':'🌧️','涼風':'🍃','紅葉日和':'🍁','寒波':'🥶','霜':'❄️'};
   document.getElementById('hTime').textContent = t.display || '--';
   document.getElementById('hDay').textContent = `Day ${s.day||t.day||'-'}`;
   document.getElementById('hSeason').textContent = seasonMap[t.season] || t.season || '';
@@ -319,7 +319,7 @@ function updateUI() {
 
   // Log
   const lp = document.getElementById('logPanel');
-  const typeColors = {politics:'#ffcc00',economy:'#00aaff',social:'#00ff88',crime:'#ff4444'};
+  const typeColors = {politics:'#ffcc00',economy:'#00aaff',social:'#00ff88',crime:'#ff4444',culture:'#cc88ff',general:'#aaaacc'};
   lp.innerHTML = logEntries.slice(-30).map(n => `<div class="log-entry"><span class="time">${n.time}</span><span style="color:${typeColors[n.type]||'var(--text)'}">${n.text}</span></div>`).join('');
   lp.scrollTop = lp.scrollHeight;
 
@@ -333,9 +333,9 @@ function spawnWeather() {
   const w = state.time.weather, s = state.time.season;
   const count = 2;
   for (let i = 0; i < count; i++) {
-    if (w === '雨' || w === '嵐') particles.push({ x: Math.random()*W, y: -5, vx: -0.5, vy: 4+Math.random()*3, life: 150, type:'rain' });
-    else if (w === '雪') particles.push({ x: Math.random()*W, y: -5, vx: Math.random()-0.5, vy: 1+Math.random(), life: 300, type:'snow' });
-    else if (s === '秋') particles.push({ x: Math.random()*W, y: -5, vx: 1+Math.random(), vy: 0.5+Math.random(), life: 400, type:'leaf' });
+    if (w === '雨' || w === '嵐' || w === '小雨' || w === '夕立' || w === '秋雨') particles.push({ x: Math.random()*W, y: -5, vx: -0.5, vy: 4+Math.random()*3, life: 150, type:'rain' });
+    else if (w === '雪' || w === '霜') particles.push({ x: Math.random()*W, y: -5, vx: Math.random()-0.5, vy: 1+Math.random(), life: 300, type:'snow' });
+    else if (s === '秋' && Math.random() < 0.3) particles.push({ x: Math.random()*W, y: -5, vx: 1+Math.random(), vy: 0.5+Math.random(), life: 400, type:'leaf' });
   }
   if (particles.length > 500) particles = particles.slice(-300);
 }
@@ -344,10 +344,10 @@ function spawnWeather() {
 function getSkyColor(hour) {
   const h = hour || 12;
   if (h < 5) return [8,8,25];
-  if (h < 7) return [20,15,50]; // dawn
-  if (h < 17) return [12,12,30]; // day
-  if (h < 19) return [30,15,20]; // sunset
-  return [8,8,22]; // night
+  if (h < 7) return [20,15,50];
+  if (h < 17) return [12,12,30];
+  if (h < 19) return [30,15,20];
+  return [8,8,22];
 }
 
 // CANVAS RENDER
@@ -369,7 +369,7 @@ function render() {
   for (let x = 0; x < cw; x += 40*sx) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,ch); ctx.stroke(); }
   for (let y = 0; y < ch; y += 40*sy) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cw,y); ctx.stroke(); }
 
-  // Roads (subtle)
+  // Roads
   ctx.strokeStyle = 'rgba(0,240,255,0.06)';
   ctx.lineWidth = 12*sx;
   ctx.beginPath(); ctx.moveTo(0, 275*sy); ctx.lineTo(cw, 275*sy); ctx.stroke();
@@ -381,28 +381,23 @@ function render() {
   (state.locations || []).forEach(loc => {
     const bx = loc.x * sx, by = loc.y * sy;
     const bw = 60*sx, bh = 40*sy;
-    // Building shadow
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.fillRect(bx-bw/2+3, by-bh/2+3, bw, bh);
-    // Building body
     const glow = isNight ? 0.4 + 0.1*Math.sin(animFrame*0.03 + loc.x) : 0.15;
-    const typeColors = {government:'rgba(255,204,0,'+glow+')',commerce:'rgba(0,240,255,'+glow+')',residential:'rgba(0,255,136,'+glow+')',business:'rgba(100,180,255,'+glow+')',service:'rgba(255,100,100,'+glow+')',education:'rgba(150,100,255,'+glow+')',leisure:'rgba(100,255,200,'+glow+')',culture:'rgba(255,150,100,'+glow+')'};
+    const typeColors = {government:'rgba(255,204,0,'+glow+')',commerce:'rgba(0,240,255,'+glow+')',residential:'rgba(0,255,136,'+glow+')',business:'rgba(100,200,255,'+glow+')',service:'rgba(255,60,60,'+glow+')',education:'rgba(150,100,255,'+glow+')',leisure:'rgba(50,200,100,'+glow+')',culture:'rgba(255,150,50,'+glow+')'};
     ctx.fillStyle = typeColors[loc.type] || 'rgba(0,240,255,'+glow+')';
     ctx.fillRect(bx-bw/2, by-bh/2, bw, bh);
     ctx.strokeStyle = 'rgba(0,240,255,0.3)';
     ctx.lineWidth = 1;
     ctx.strokeRect(bx-bw/2, by-bh/2, bw, bh);
-    // Glow at night
     if (isNight) {
       const gr = ctx.createRadialGradient(bx, by, 0, bx, by, 50*sx);
       gr.addColorStop(0, 'rgba(255,200,50,0.08)'); gr.addColorStop(1, 'transparent');
       ctx.fillStyle = gr; ctx.fillRect(bx-50*sx, by-50*sy, 100*sx, 100*sy);
     }
-    // Icon
     ctx.font = `${18*sx}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.fillText(loc.icon || '🏠', bx, by + 5*sy);
-    // Label
     ctx.font = `${8*sx}px 'Noto Sans JP',sans-serif`;
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.fillText(loc.name, bx, by + bh/2 + 12*sy);
@@ -413,7 +408,7 @@ function render() {
     p.x += p.vx; p.y += p.vy; p.life--;
     if (p.type === 'rain') { ctx.strokeStyle='rgba(100,180,255,0.4)'; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+p.vx*2,p.y+p.vy*2); ctx.stroke(); }
     else if (p.type === 'snow') { ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.arc(p.x,p.y,1.5,0,Math.PI*2); ctx.fill(); }
-    else if (p.type === 'leaf') { ctx.fillStyle='rgba(200,120,30,0.5)'; ctx.fillText('🍂', p.x, p.y); }
+    else if (p.type === 'leaf') { ctx.font='10px sans-serif'; ctx.fillText('🍂', p.x, p.y); }
   });
   particles = particles.filter(p => p.life > 0 && p.y < ch + 10);
 
@@ -422,7 +417,6 @@ function render() {
   citizens.forEach(c => {
     const pos = citizenPositions[c.id];
     if (!pos) return;
-    // Lerp
     pos.x += (pos.tx - pos.x) * 0.05;
     pos.y += (pos.ty - pos.y) * 0.05;
     const cx = pos.x * sx, cy = pos.y * sy;
@@ -432,7 +426,7 @@ function render() {
     ctx.beginPath(); ctx.arc(cx, cy, 4*sx, 0, Math.PI*2); ctx.fill();
 
     // Dot
-    const moodColors = {happy:'#00ff88',neutral:'#00f0ff',sad:'#6a6aff',angry:'#ff4444',stressed:'#ffaa00'};
+    const moodColors = {ecstatic:'#00ff88',happy:'#00ff88',neutral:'#00f0ff',sad:'#6a6aff',miserable:'#ff4444',angry:'#ff4444',stressed:'#ffaa00'};
     ctx.fillStyle = moodColors[c.mood] || '#00f0ff';
     ctx.beginPath(); ctx.arc(cx, cy, 4*sx, 0, Math.PI*2); ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 0.5;
@@ -451,10 +445,10 @@ function render() {
       const bx2 = cx - tw/2, by2 = cy - 28*sy;
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
       ctx.beginPath();
-      ctx.roundRect(bx2, by2, tw, 14*sy, 4*sx);
+      if (ctx.roundRect) ctx.roundRect(bx2, by2, tw, 14*sy, 4*sx);
+      else { ctx.rect(bx2, by2, tw, 14*sy); }
       ctx.fill();
       ctx.strokeStyle = 'rgba(0,240,255,0.3)'; ctx.lineWidth = 0.5; ctx.stroke();
-      // Tail
       ctx.beginPath(); ctx.moveTo(cx-3*sx, by2+14*sy); ctx.lineTo(cx, by2+18*sy); ctx.lineTo(cx+3*sx, by2+14*sy); ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fill();
       ctx.fillStyle = '#e0e0f0';
       ctx.fillText(txt, cx, by2 + 10*sy);
@@ -521,11 +515,10 @@ async function registerCitizen() {
     const data = await res.json();
     const r = document.getElementById('mResult');
     r.style.display = 'block';
-    r.textContent = data.success !== false ? `✅ 参加成功！ ID: ${data.id||data.citizen_id||'OK'}` : `❌ ${data.error||'エラー'}`;
+    r.textContent = data.citizen_id ? `✅ 参加成功！ ID: ${data.citizen_id}` : `❌ ${data.error||'エラー'}`;
   } catch(e) { document.getElementById('mResult').style.display='block'; document.getElementById('mResult').textContent='❌ 接続エラー'; }
 }
 
-// Close popup on outside click
 document.addEventListener('click', e => {
   if (!e.target.closest('.canvas-wrap') && !e.target.closest('.citizen-popup'))
     document.getElementById('citizenPopup').className = 'citizen-popup';
