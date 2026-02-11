@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AICity — AI国家シミュレーション</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700&family=Orbitron:wght@400;700&display=swap');
+:root{--bg:#0a0a1a;--panel:rgba(15,15,35,0.85);--border:rgba(0,240,255,0.15);--cyan:#00f0ff;--orange:#ff6b35;--pink:#ff3cac;--green:#00ff88;--text:#e0e0f0;--dim:#6a6a8a;--glass:rgba(20,20,50,0.7)}
+html,body{height:100%;font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--cyan);border-radius:2px}
+
+#app{display:flex;flex-direction:column;height:100vh;min-height:0}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:linear-gradient(90deg,rgba(0,240,255,0.08),transparent,rgba(255,107,53,0.08));border-bottom:1px solid var(--border);flex-shrink:0;gap:8px;flex-wrap:wrap}
+header .title{font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;background:linear-gradient(90deg,var(--cyan),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+header .info{display:flex;align-items:center;gap:12px;font-size:.85rem;flex-wrap:wrap}
+header .info span{white-space:nowrap}
+.conn-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle;transition:background .3s}
+.conn-dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}.conn-dot.off{background:#f44}
+
+/* MAIN LAYOUT */
+.main{display:flex;flex:1;min-height:0;gap:0}
+.map-col{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.side-col{width:320px;flex-shrink:0;display:flex;flex-direction:column;gap:0;overflow-y:auto;border-left:1px solid var(--border);background:var(--panel)}
+
+/* CANVAS */
+.canvas-wrap{flex:1;position:relative;min-height:300px;background:#070714}
+#cityCanvas{width:100%;height:100%;display:block;cursor:crosshair}
+
+/* PANELS */
+.panel{padding:10px 12px;border-bottom:1px solid var(--border)}
+.panel-title{font-family:'Orbitron',sans-serif;font-size:.7rem;text-transform:uppercase;letter-spacing:2px;color:var(--cyan);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.panel-title .icon{font-style:normal;font-size:.9rem}
+
+/* STATS */
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:.8rem}
+.stat-val{font-weight:700;font-family:'Orbitron',sans-serif;font-size:.8rem;color:var(--cyan)}
+.meter{height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden;flex:1;margin-left:8px;max-width:100px}
+.meter-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.meter-happy .meter-fill{background:linear-gradient(90deg,#f44,#ff0,var(--green))}
+.meter-health .meter-fill{background:linear-gradient(90deg,#f44,var(--green))}
+.sparkline{display:flex;align-items:flex-end;gap:1px;height:20px}
+.sparkline .bar{width:4px;background:var(--cyan);border-radius:1px 1px 0 0;transition:height .3s;opacity:.7}
+
+/* GOVERNMENT */
+.bill-bar{height:10px;border-radius:5px;background:rgba(255,255,255,0.06);overflow:hidden;display:flex;margin:4px 0}
+.bill-for{background:var(--green);transition:width .4s}.bill-against{background:#f44;transition:width .4s}
+.pm-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,240,255,0.1);padding:2px 8px;border-radius:10px;font-size:.78rem}
+
+/* ECONOMY */
+.price-row{display:flex;justify-content:space-between;font-size:.78rem;padding:1px 0}
+.price-up{color:var(--orange)}
+.price-down{color:var(--green)}
+.biz-item{font-size:.75rem;padding:2px 0;color:var(--dim)}
+
+/* NEWS TICKER */
+.ticker{flex-shrink:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(0,240,255,0.03);overflow:hidden;height:28px;display:flex;align-items:center;position:relative}
+.ticker-label{background:var(--orange);color:#000;font-weight:700;font-size:.7rem;padding:0 10px;height:100%;display:flex;align-items:center;flex-shrink:0;z-index:1}
+.ticker-track{display:flex;white-space:nowrap;animation:tickerScroll 30s linear infinite;font-size:.78rem;padding-left:20px}
+.ticker-track span{margin-right:40px;opacity:.9}
+@keyframes tickerScroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+
+/* BOTTOM PANELS */
+.bottom{display:flex;flex-shrink:0;height:200px;min-height:120px;border-top:1px solid var(--border)}
+.bottom>div{flex:1;overflow-y:auto;padding:8px 12px}
+.bottom>div:first-child{border-right:1px solid var(--border)}
+.conv-msg{margin-bottom:6px;animation:fadeIn .3s ease}
+.conv-speaker{font-weight:700;font-size:.75rem;color:var(--orange)}
+.conv-bubble{background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.12);border-radius:8px 8px 8px 2px;padding:4px 8px;font-size:.78rem;display:inline-block;max-width:90%;margin-top:2px}
+.log-entry{font-size:.75rem;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+.log-entry .time{color:var(--dim);margin-right:6px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* JOIN BUTTON */
+.join-btn{position:fixed;bottom:16px;right:16px;background:linear-gradient(135deg,var(--cyan),var(--pink));color:#000;border:none;padding:10px 18px;border-radius:24px;font-weight:700;font-size:.85rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,240,255,0.3);z-index:100;transition:transform .2s,box-shadow .2s}
+.join-btn:hover{transform:scale(1.05);box-shadow:0 6px 30px rgba(0,240,255,0.5)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:16px;padding:24px;width:360px;max-width:90vw}
+.modal h2{font-family:'Orbitron',sans-serif;font-size:1rem;margin-bottom:12px;color:var(--cyan)}
+.modal label{font-size:.8rem;display:block;margin:8px 0 4px;color:var(--dim)}
+.modal input,.modal select{width:100%;padding:8px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.85rem}
+.modal input:focus,.modal select:focus{outline:none;border-color:var(--cyan)}
+.slider-row{display:flex;align-items:center;gap:8px}.slider-row input[type=range]{flex:1;accent-color:var(--cyan)}
+.modal-actions{display:flex;gap:8px;margin-top:16px}
+.modal-actions button{flex:1;padding:8px;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.85rem}
+.modal-actions .submit{background:var(--cyan);color:#000}.modal-actions .cancel{background:rgba(255,255,255,0.1);color:var(--text)}
+
+/* CITIZEN POPUP */
+.citizen-popup{display:none;position:absolute;background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:12px;padding:12px;width:220px;z-index:50;pointer-events:none;font-size:.78rem;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+.citizen-popup.show{display:block}
+.citizen-popup .name{font-weight:700;font-size:.9rem;color:var(--cyan)}
+.citizen-popup .role{color:var(--orange);font-size:.75rem}
+.citizen-popup .stat-line{display:flex;justify-content:space-between;padding:1px 0}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .main{flex-direction:column}.side-col{width:100%;max-height:40vh;border-left:none;border-top:1px solid var(--border)}
+  .bottom{flex-direction:column;height:auto}.bottom>div{border-right:none!important;border-bottom:1px solid var(--border);max-height:150px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="title">🏙️ AICity</div>
+    <div class="info">
+      <span id="hTime">--</span>
+      <span id="hDay">Day -</span>
+      <span id="hSeason">-</span>
+      <span id="hWeather">-</span>
+      <span>👥 <b id="hPop">0</b></span>
+      <span><i class="conn-dot off" id="connDot"></i><span id="connText">切断</span></span>
+    </div>
+  </header>
+  <div class="main">
+    <div class="map-col">
+      <div class="canvas-wrap"><canvas id="cityCanvas"></canvas></div>
+      <div class="citizen-popup" id="citizenPopup">
+        <div class="name" id="cpName"></div>
+        <div class="role" id="cpRole"></div>
+        <div id="cpDetails"></div>
+      </div>
+    </div>
+    <div class="side-col">
+      <div class="panel">
+        <div class="panel-title"><em class="icon">📊</em> STATISTICS</div>
+        <div class="stat-row"><span>人口</span><span class="stat-val" id="sPop">0</span></div>
+        <div class="stat-row"><span>GDP</span><span class="stat-val" id="sGdp">¥0</span></div>
+        <div class="stat-row"><span>GDP推移</span><div class="sparkline" id="sSparkline"></div></div>
+        <div class="stat-row"><span>幸福度</span><div class="meter meter-happy"><div class="meter-fill" id="sHappy" style="width:0%"></div></div><span class="stat-val" id="sHappyV" style="margin-left:6px">0%</span></div>
+        <div class="stat-row"><span>健康度</span><div class="meter meter-health"><div class="meter-fill" id="sHealth" style="width:0%"></div></div><span class="stat-val" id="sHealthV" style="margin-left:6px">0%</span></div>
+        <div class="stat-row"><span>失業率</span><span class="stat-val" id="sUnemp">0%</span></div>
+        <div class="stat-row"><span>企業数</span><span class="stat-val" id="sBiz">0</span></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><em class="icon">🏛️</em> GOVERNMENT</div>
+        <div id="govPanel">
+          <div class="stat-row"><span>首相</span><span class="pm-badge" id="gPM">-</span></div>
+          <div class="stat-row"><span>議員数</span><span class="stat-val" id="gMembers">0</span></div>
+          <div class="stat-row"><span>制定法</span><span class="stat-val" id="gLaws">0</span></div>
+          <div class="stat-row"><span>国庫</span><span class="stat-val" id="gTreasury">¥0</span></div>
+          <div class="stat-row"><span>次の選挙</span><span class="stat-val" id="gElection">-</span></div>
+          <div id="gBillWrap" style="margin-top:6px;display:none">
+            <div style="font-size:.78rem;color:var(--orange)">📜 <b id="gBillName">-</b> <span id="gBillStatus" style="color:var(--dim)"></span></div>
+            <div class="bill-bar"><div class="bill-for" id="gBillFor" style="width:50%"></div><div class="bill-against" id="gBillAgainst" style="width:50%"></div></div>
+            <div style="font-size:.7rem;color:var(--dim)">賛成 <span id="gForN">0</span> / 反対 <span id="gAgainstN">0</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><em class="icon">💰</em> ECONOMY</div>
+        <div class="stat-row"><span>税率</span><span class="stat-val" id="eTax">0%</span></div>
+        <div class="stat-row"><span>インフレ率</span><span class="stat-val" id="eInflation">0%</span></div>
+        <div id="ePrices" style="margin-top:4px"></div>
+        <div style="margin-top:6px;font-size:.7rem;color:var(--dim)">トップ企業</div>
+        <div id="eBiz"></div>
+      </div>
+    </div>
+  </div>
+  <div class="ticker">
+    <div class="ticker-label">📰 NEWS</div>
+    <div class="ticker-track" id="tickerTrack"></div>
+  </div>
+  <div class="bottom">
+    <div>
+      <div class="panel-title"><em class="icon">💬</em> CONVERSATIONS</div>
+      <div id="convPanel"></div>
+    </div>
+    <div>
+      <div class="panel-title"><em class="icon">📋</em> ACTIVITY LOG</div>
+      <div id="logPanel"></div>
+    </div>
+  </div>
+</div>
+
+<button class="join-btn" onclick="showModal()">🤖 AIとして参加</button>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>🤖 AIとして参加</h2>
+    <label>名前</label><input id="mName" placeholder="例: 山田太郎">
+    <label>役割</label>
+    <select id="mRole"><option>市民</option><option>商人</option><option>農家</option><option>教師</option><option>医者</option><option>エンジニア</option><option>芸術家</option><option>政治家</option></select>
+    <label>性格: 外向性</label><div class="slider-row"><span>内向</span><input type="range" id="mExtro" min="0" max="100" value="50"><span>外向</span></div>
+    <label>性格: 協調性</label><div class="slider-row"><span>低</span><input type="range" id="mAgree" min="0" max="100" value="50"><span>高</span></div>
+    <div id="mResult" style="margin-top:8px;font-size:.8rem;color:var(--green);display:none"></div>
+    <div class="modal-actions">
+      <button class="cancel" onclick="hideModal()">キャンセル</button>
+      <button class="submit" onclick="registerCitizen()">参加する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// STATE
+let state = null, prevPrices = {}, gdpHistory = [], logEntries = [], citizenPositions = {}, particles = [], ws = null;
+const canvas = document.getElementById('cityCanvas'), ctx = canvas.getContext('2d');
+let W = 900, H = 550, scale = 1, selectedCitizen = null, mouseX = 0, mouseY = 0, animFrame = 0;
+
+// RESIZE
+function resize() {
+  const wrap = canvas.parentElement, r = wrap.clientWidth / 1000;
+  scale = r;
+  canvas.width = wrap.clientWidth * devicePixelRatio;
+  canvas.height = wrap.clientHeight * devicePixelRatio;
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  W = wrap.clientWidth; H = wrap.clientHeight;
+}
+window.addEventListener('resize', resize); resize();
+
+// WEBSOCKET
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/ws`);
+  ws.onopen = () => { document.getElementById('connDot').className = 'conn-dot on'; document.getElementById('connText').textContent = '接続中'; };
+  ws.onclose = () => { document.getElementById('connDot').className = 'conn-dot off'; document.getElementById('connText').textContent = '切断'; setTimeout(connect, 3000); };
+  ws.onerror = () => ws.close();
+  ws.onmessage = e => { try { updateState(JSON.parse(e.data)); } catch(err) { console.error(err); } };
+}
+connect();
+
+function updateState(d) {
+  const prev = state;
+  state = d;
+  // Track GDP
+  if (d.economy) { gdpHistory.push(d.economy.gdp); if (gdpHistory.length > 20) gdpHistory.shift(); }
+  // Lerp targets
+  if (d.citizens) d.citizens.forEach(c => {
+    if (!citizenPositions[c.id]) citizenPositions[c.id] = { x: c.x, y: c.y };
+    citizenPositions[c.id].tx = c.x; citizenPositions[c.id].ty = c.y;
+  });
+  // News log
+  if (d.news) d.news.forEach(n => {
+    if (!logEntries.find(e => e.time === n.time && e.text === n.text)) logEntries.push(n);
+  });
+  if (logEntries.length > 100) logEntries = logEntries.slice(-100);
+  // Prices diff
+  if (prev && prev.economy && d.economy) { prevPrices = prev.economy.prices || {}; }
+  updateUI();
+}
+
+// UI UPDATE
+function updateUI() {
+  if (!state) return;
+  const t = state.time || {}, s = state.stats || {}, g = state.government || {}, e = state.economy || {};
+  const seasonMap = {'春':'🌸春','夏':'☀️夏','秋':'🍂秋','冬':'❄️冬'};
+  const weatherMap = {'晴れ':'☀️','曇り':'☁️','雨':'🌧️','雪':'❄️','嵐':'⛈️'};
+  document.getElementById('hTime').textContent = t.display || '--';
+  document.getElementById('hDay').textContent = `Day ${s.day||t.day||'-'}`;
+  document.getElementById('hSeason').textContent = seasonMap[t.season] || t.season || '';
+  document.getElementById('hWeather').textContent = (weatherMap[t.weather]||'') + (t.weather||'');
+  document.getElementById('hPop').textContent = s.population || 0;
+
+  // Stats
+  document.getElementById('sPop').textContent = s.population || 0;
+  document.getElementById('sGdp').textContent = '¥' + (e.gdp||0).toLocaleString();
+  document.getElementById('sHappy').style.width = (s.avgHappiness||0) + '%';
+  document.getElementById('sHappyV').textContent = (s.avgHappiness||0) + '%';
+  document.getElementById('sHealth').style.width = (s.avgHealth||0) + '%';
+  document.getElementById('sHealthV').textContent = (s.avgHealth||0) + '%';
+  document.getElementById('sUnemp').textContent = (e.unemployment||0) + '%';
+  document.getElementById('sBiz').textContent = (e.businesses||[]).length;
+
+  // Sparkline
+  const sp = document.getElementById('sSparkline');
+  const maxG = Math.max(...gdpHistory, 1);
+  sp.innerHTML = gdpHistory.map(v => `<div class="bar" style="height:${Math.max(2, v/maxG*20)}px"></div>`).join('');
+
+  // Government
+  if (g.primeMinister) document.getElementById('gPM').textContent = '👔 ' + g.primeMinister.name + ' (' + (g.primeMinister.party||'') + ')';
+  document.getElementById('gMembers').textContent = (g.parliamentMembers||[]).length;
+  document.getElementById('gLaws').textContent = (g.laws||[]).filter(l=>l.status==='enacted').length;
+  document.getElementById('gTreasury').textContent = '¥' + (g.treasury||0).toLocaleString();
+  document.getElementById('gElection').textContent = g.nextElection || '-';
+  if (g.activeBill) {
+    document.getElementById('gBillWrap').style.display = 'block';
+    document.getElementById('gBillName').textContent = g.activeBill.name;
+    document.getElementById('gBillStatus').textContent = `(${g.activeBill.status})`;
+    const total = (g.activeBill.votesFor||0) + (g.activeBill.votesAgainst||0) || 1;
+    document.getElementById('gBillFor').style.width = (g.activeBill.votesFor/total*100) + '%';
+    document.getElementById('gBillAgainst').style.width = (g.activeBill.votesAgainst/total*100) + '%';
+    document.getElementById('gForN').textContent = g.activeBill.votesFor||0;
+    document.getElementById('gAgainstN').textContent = g.activeBill.votesAgainst||0;
+  } else { document.getElementById('gBillWrap').style.display = 'none'; }
+
+  // Economy
+  document.getElementById('eTax').textContent = (e.taxRate||0) + '%';
+  document.getElementById('eInflation').textContent = (e.inflation||0) + '%';
+  const priceNames = {food:'🍚食料',housing:'🏠住居',clothing:'👕衣類',tools:'🔧道具',services:'💼サービス',entertainment:'🎭娯楽'};
+  let ph = '';
+  for (const [k,v] of Object.entries(e.prices||{})) {
+    const prev = prevPrices[k], arrow = prev ? (v>prev?'<span class="price-up">▲</span>':v<prev?'<span class="price-down">▼</span>':'') : '';
+    ph += `<div class="price-row"><span>${priceNames[k]||k}</span><span>¥${v} ${arrow}</span></div>`;
+  }
+  document.getElementById('ePrices').innerHTML = ph;
+  const biz = (e.businesses||[]).sort((a,b)=>(b.revenue||0)-(a.revenue||0)).slice(0,3);
+  document.getElementById('eBiz').innerHTML = biz.map(b => `<div class="biz-item">${b.name} (${b.type}) — ¥${(b.revenue||0).toLocaleString()}</div>`).join('');
+
+  // News ticker
+  const ticker = document.getElementById('tickerTrack');
+  if (state.news && state.news.length) {
+    ticker.innerHTML = state.news.map(n => `<span>${n.time} ${n.text}</span>`).join('') + state.news.map(n => `<span>${n.time} ${n.text}</span>`).join('');
+  }
+
+  // Conversations
+  const cp = document.getElementById('convPanel');
+  const convs = (state.conversations||[]).slice(-5);
+  cp.innerHTML = convs.map(c => {
+    const loc = c.location || '';
+    return (c.messages||[]).map(m => `<div class="conv-msg"><div class="conv-speaker">${m.speaker} <span style="color:var(--dim);font-weight:300">@${loc}</span></div><div class="conv-bubble">${m.text}</div></div>`).join('');
+  }).join('');
+  cp.scrollTop = cp.scrollHeight;
+
+  // Log
+  const lp = document.getElementById('logPanel');
+  const typeColors = {politics:'#ffcc00',economy:'#00aaff',social:'#00ff88',crime:'#ff4444'};
+  lp.innerHTML = logEntries.slice(-30).map(n => `<div class="log-entry"><span class="time">${n.time}</span><span style="color:${typeColors[n.type]||'var(--text)'}">${n.text}</span></div>`).join('');
+  lp.scrollTop = lp.scrollHeight;
+
+  // Spawn weather particles
+  spawnWeather();
+}
+
+// WEATHER PARTICLES
+function spawnWeather() {
+  if (!state || !state.time) return;
+  const w = state.time.weather, s = state.time.season;
+  const count = 2;
+  for (let i = 0; i < count; i++) {
+    if (w === '雨' || w === '嵐') particles.push({ x: Math.random()*W, y: -5, vx: -0.5, vy: 4+Math.random()*3, life: 150, type:'rain' });
+    else if (w === '雪') particles.push({ x: Math.random()*W, y: -5, vx: Math.random()-0.5, vy: 1+Math.random(), life: 300, type:'snow' });
+    else if (s === '秋') particles.push({ x: Math.random()*W, y: -5, vx: 1+Math.random(), vy: 0.5+Math.random(), life: 400, type:'leaf' });
+  }
+  if (particles.length > 500) particles = particles.slice(-300);
+}
+
+// TIME OF DAY COLOR
+function getSkyColor(hour) {
+  const h = hour || 12;
+  if (h < 5) return [8,8,25];
+  if (h < 7) return [20,15,50]; // dawn
+  if (h < 17) return [12,12,30]; // day
+  if (h < 19) return [30,15,20]; // sunset
+  return [8,8,22]; // night
+}
+
+// CANVAS RENDER
+function render() {
+  animFrame++;
+  const cw = W, ch = H;
+  const sx = cw / 1000, sy = ch / 550;
+  const hour = state ? (state.time?.hour || 12) : 12;
+  const sky = getSkyColor(hour);
+  const isNight = hour < 6 || hour > 18;
+
+  // Background
+  ctx.fillStyle = `rgb(${sky[0]},${sky[1]},${sky[2]})`;
+  ctx.fillRect(0, 0, cw, ch);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,240,255,0.03)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < cw; x += 40*sx) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,ch); ctx.stroke(); }
+  for (let y = 0; y < ch; y += 40*sy) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cw,y); ctx.stroke(); }
+
+  // Roads (subtle)
+  ctx.strokeStyle = 'rgba(0,240,255,0.06)';
+  ctx.lineWidth = 12*sx;
+  ctx.beginPath(); ctx.moveTo(0, 275*sy); ctx.lineTo(cw, 275*sy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(500*sx, 0); ctx.lineTo(500*sx, ch); ctx.stroke();
+
+  if (!state) { requestAnimationFrame(render); return; }
+
+  // Buildings
+  (state.locations || []).forEach(loc => {
+    const bx = loc.x * sx, by = loc.y * sy;
+    const bw = 60*sx, bh = 40*sy;
+    // Building shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(bx-bw/2+3, by-bh/2+3, bw, bh);
+    // Building body
+    const glow = isNight ? 0.4 + 0.1*Math.sin(animFrame*0.03 + loc.x) : 0.15;
+    const typeColors = {government:'rgba(255,204,0,'+glow+')',commerce:'rgba(0,240,255,'+glow+')',residential:'rgba(0,255,136,'+glow+')',business:'rgba(100,180,255,'+glow+')',service:'rgba(255,100,100,'+glow+')',education:'rgba(150,100,255,'+glow+')',leisure:'rgba(100,255,200,'+glow+')',culture:'rgba(255,150,100,'+glow+')'};
+    ctx.fillStyle = typeColors[loc.type] || 'rgba(0,240,255,'+glow+')';
+    ctx.fillRect(bx-bw/2, by-bh/2, bw, bh);
+    ctx.strokeStyle = 'rgba(0,240,255,0.3)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx-bw/2, by-bh/2, bw, bh);
+    // Glow at night
+    if (isNight) {
+      const gr = ctx.createRadialGradient(bx, by, 0, bx, by, 50*sx);
+      gr.addColorStop(0, 'rgba(255,200,50,0.08)'); gr.addColorStop(1, 'transparent');
+      ctx.fillStyle = gr; ctx.fillRect(bx-50*sx, by-50*sy, 100*sx, 100*sy);
+    }
+    // Icon
+    ctx.font = `${18*sx}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(loc.icon || '🏠', bx, by + 5*sy);
+    // Label
+    ctx.font = `${8*sx}px 'Noto Sans JP',sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText(loc.name, bx, by + bh/2 + 12*sy);
+  });
+
+  // Particles
+  particles.forEach((p, i) => {
+    p.x += p.vx; p.y += p.vy; p.life--;
+    if (p.type === 'rain') { ctx.strokeStyle='rgba(100,180,255,0.4)'; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+p.vx*2,p.y+p.vy*2); ctx.stroke(); }
+    else if (p.type === 'snow') { ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.arc(p.x,p.y,1.5,0,Math.PI*2); ctx.fill(); }
+    else if (p.type === 'leaf') { ctx.fillStyle='rgba(200,120,30,0.5)'; ctx.fillText('🍂', p.x, p.y); }
+  });
+  particles = particles.filter(p => p.life > 0 && p.y < ch + 10);
+
+  // Citizens
+  const citizens = (state.citizens || []).slice(0, 50);
+  citizens.forEach(c => {
+    const pos = citizenPositions[c.id];
+    if (!pos) return;
+    // Lerp
+    pos.x += (pos.tx - pos.x) * 0.05;
+    pos.y += (pos.ty - pos.y) * 0.05;
+    const cx = pos.x * sx, cy = pos.y * sy;
+
+    // Trail
+    ctx.fillStyle = 'rgba(0,240,255,0.03)';
+    ctx.beginPath(); ctx.arc(cx, cy, 4*sx, 0, Math.PI*2); ctx.fill();
+
+    // Dot
+    const moodColors = {happy:'#00ff88',neutral:'#00f0ff',sad:'#6a6aff',angry:'#ff4444',stressed:'#ffaa00'};
+    ctx.fillStyle = moodColors[c.mood] || '#00f0ff';
+    ctx.beginPath(); ctx.arc(cx, cy, 4*sx, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Avatar emoji
+    ctx.font = `${10*sx}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(c.avatar || '👤', cx, cy - 8*sy);
+
+    // Speech bubble
+    if (c.speaking) {
+      const txt = c.speaking.length > 15 ? c.speaking.slice(0,15)+'…' : c.speaking;
+      ctx.font = `${7*sx}px 'Noto Sans JP',sans-serif`;
+      const tw = ctx.measureText(txt).width + 8*sx;
+      const bx2 = cx - tw/2, by2 = cy - 28*sy;
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.beginPath();
+      ctx.roundRect(bx2, by2, tw, 14*sy, 4*sx);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,240,255,0.3)'; ctx.lineWidth = 0.5; ctx.stroke();
+      // Tail
+      ctx.beginPath(); ctx.moveTo(cx-3*sx, by2+14*sy); ctx.lineTo(cx, by2+18*sy); ctx.lineTo(cx+3*sx, by2+14*sy); ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fill();
+      ctx.fillStyle = '#e0e0f0';
+      ctx.fillText(txt, cx, by2 + 10*sy);
+    }
+  });
+
+  // External citizen badge
+  citizens.filter(c=>c.isExternal).forEach(c => {
+    const pos = citizenPositions[c.id]; if(!pos)return;
+    ctx.fillStyle = 'rgba(255,60,172,0.7)';
+    ctx.font = `${6*sx}px sans-serif`;
+    ctx.fillText('🤖', pos.x*sx+8*sx, pos.y*sy-4*sy);
+  });
+
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+
+// CLICK
+canvas.addEventListener('click', e => {
+  if (!state) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) / (rect.width/1000);
+  const my = (e.clientY - rect.top) / (rect.height/550);
+  let closest = null, minD = 20;
+  (state.citizens||[]).forEach(c => {
+    const pos = citizenPositions[c.id]; if(!pos) return;
+    const d = Math.hypot(pos.x - mx, pos.y - my);
+    if (d < minD) { minD = d; closest = c; }
+  });
+  const popup = document.getElementById('citizenPopup');
+  if (closest) {
+    const c = closest;
+    document.getElementById('cpName').textContent = (c.avatar||'') + ' ' + c.name + ` (${c.age}歳・${c.gender})`;
+    document.getElementById('cpRole').textContent = c.role + ' — ' + (c.action||'');
+    let det = `<div class="stat-line"><span>💰</span><span>¥${(c.money||0).toLocaleString()}</span></div>`;
+    det += `<div class="stat-line"><span>😊 幸福</span><span>${c.happiness}%</span></div>`;
+    det += `<div class="stat-line"><span>❤️ 健康</span><span>${c.health}%</span></div>`;
+    det += `<div class="stat-line"><span>🍽️ 空腹</span><span>${c.hunger}%</span></div>`;
+    if (c.family) {
+      if (c.family.spouse) det += `<div class="stat-line"><span>💑</span><span>${c.family.spouse}</span></div>`;
+      if (c.family.children?.length) det += `<div class="stat-line"><span>👶</span><span>${c.family.children.join(', ')}</span></div>`;
+    }
+    document.getElementById('cpDetails').innerHTML = det;
+    popup.className = 'citizen-popup show';
+    popup.style.left = Math.min(e.clientX + 10, window.innerWidth - 240) + 'px';
+    popup.style.top = (e.clientY - 100) + 'px';
+  } else {
+    popup.className = 'citizen-popup';
+  }
+});
+
+// MODAL
+function showModal() { document.getElementById('modalOverlay').classList.add('show'); }
+function hideModal() { document.getElementById('modalOverlay').classList.remove('show'); document.getElementById('mResult').style.display='none'; }
+async function registerCitizen() {
+  const body = {
+    name: document.getElementById('mName').value || '匿名AI',
+    role: document.getElementById('mRole').value,
+    personality: { extraversion: +document.getElementById('mExtro').value, agreeableness: +document.getElementById('mAgree').value }
+  };
+  try {
+    const res = await fetch('/api/citizen/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const data = await res.json();
+    const r = document.getElementById('mResult');
+    r.style.display = 'block';
+    r.textContent = data.success !== false ? `✅ 参加成功！ ID: ${data.id||data.citizen_id||'OK'}` : `❌ ${data.error||'エラー'}`;
+  } catch(e) { document.getElementById('mResult').style.display='block'; document.getElementById('mResult').textContent='❌ 接続エラー'; }
+}
+
+// Close popup on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.canvas-wrap') && !e.target.closest('.citizen-popup'))
+    document.getElementById('citizenPopup').className = 'citizen-popup';
+});
+</script>
+</body>
+</html>
